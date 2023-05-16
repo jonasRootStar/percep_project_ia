@@ -1,7 +1,35 @@
-from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QGridLayout, QSizePolicy, QGroupBox, QComboBox
 import pyqtgraph as pg
+from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QGridLayout, QSizePolicy, QGroupBox, QComboBox, QDialog, QDialogButtonBox
 from PySide6.QtGui import QFont
 from PySide6 import QtCore
+# from rectangulo import MainWindow
+import random
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+
+
+class VentanaEmergente(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Cantidad de datos")
+        btns = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.btnBox = QDialogButtonBox(btns)
+        self.btnBox.accepted.connect(self.accept)
+        self.btnBox.rejected.connect(self.reject)
+
+        self.layoutReco = QVBoxLayout()
+        self.entrada = QLineEdit()
+        msg = QLabel("Introduce la cantidad de datos que se generan de forma aleatoria:")
+
+        self.layoutReco.addWidget(msg)
+        self.layoutReco.addWidget(self.entrada)
+        self.layoutReco.addWidget(self.btnBox)
+        self.setLayout(self.layoutReco)
+
+
+
 
 
 class VentanaDos(QWidget):
@@ -15,6 +43,11 @@ class VentanaDos(QWidget):
         label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         label.setFont(QFont('Cascadia Code', 20))
         label.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
+        self.figuraGrafica = Figure()
+        self.grafica = FigureCanvas(self.figuraGrafica)
+        self.puntos_regA = dict(puntosx = [], puntosy = [])
+        self.puntos_regB = dict(puntosx = [], puntosy = [])
+
 
 
         # Layoud principal ---------------------------------------------------
@@ -112,28 +145,30 @@ class VentanaDos(QWidget):
         regB_Group = QGroupBox("Región B")
         regB_Group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         xa_1 = QLabel("X1")
-        xa_1_input = QLineEdit()
+        self.xa_1_input = QLineEdit()
         xa_2 = QLabel("X2")
-        xa_2_input = QLineEdit()
+        self.xa_2_input = QLineEdit()
         ya_1 = QLabel("Y1")
-        ya_1_input = QLineEdit()
+        self.ya_1_input = QLineEdit()
         ya_2 = QLabel("Y2")
-        ya_2_input = QLineEdit()
+        self.ya_2_input = QLineEdit()
         nA = QLabel("Núm. A")
-        nA_input = QLineEdit()
+        self.nA_input = QLineEdit()
         btnA = QPushButton("OK Región A")
+        btnA.clicked.connect(self.btnA_clicked)
 
         xb_1 = QLabel("X1")
-        xb_1_input = QLineEdit()
+        self.xb_1_input = QLineEdit()
         xb_2 = QLabel("X2")
-        xb_2_input = QLineEdit()
+        self.xb_2_input = QLineEdit()
         yb_1 = QLabel("Y1")
-        yb_1_input = QLineEdit()
+        self.yb_1_input = QLineEdit()
         yb_2 = QLabel("Y2")
-        yb_2_input = QLineEdit()
+        self.yb_2_input = QLineEdit()
         nB = QLabel("Núm. B")
-        nB_input = QLineEdit()
+        self.nB_input = QLineEdit()
         btnB = QPushButton("OK Región B")
+        btnB.clicked.connect(self.btnB_clicked)
 
         regInput_layout.addLayout(regA_layout)
         regInput_layout.addLayout(regB_layout)
@@ -144,50 +179,143 @@ class VentanaDos(QWidget):
         regB_Group.setLayout(gridB_layout)
 
         gridA_layout.addWidget(xa_1, 0, 0)
-        gridA_layout.addWidget(xa_1_input, 0, 1)
+        gridA_layout.addWidget(self.xa_1_input, 0, 1)
         gridA_layout.addWidget(xa_2, 1, 0)
-        gridA_layout.addWidget(xa_2_input, 1, 1)
+        gridA_layout.addWidget(self.xa_2_input, 1, 1)
         gridA_layout.addWidget(ya_1, 0, 2)
-        gridA_layout.addWidget(ya_1_input, 0, 3)
+        gridA_layout.addWidget(self.ya_1_input, 0, 3)
         gridA_layout.addWidget(ya_2, 1, 2)
-        gridA_layout.addWidget(ya_2_input, 1, 3)
+        gridA_layout.addWidget(self.ya_2_input, 1, 3)
         gridA_layout.addWidget(nA, 2, 0)
-        gridA_layout.addWidget(nA_input, 2, 1)
+        gridA_layout.addWidget(self.nA_input, 2, 1)
         gridA_layout.addWidget(btnA, 3, 0, 1, 4)
 
         gridB_layout.addWidget(xb_1, 0, 0)
-        gridB_layout.addWidget(xb_1_input, 0, 1)
+        gridB_layout.addWidget(self.xb_1_input, 0, 1)
         gridB_layout.addWidget(xb_2, 1, 0)
-        gridB_layout.addWidget(xb_2_input, 1, 1)
+        gridB_layout.addWidget(self.xb_2_input, 1, 1)
         gridB_layout.addWidget(yb_1, 0, 2)
-        gridB_layout.addWidget(yb_1_input, 0, 3)
+        gridB_layout.addWidget(self.yb_1_input, 0, 3)
         gridB_layout.addWidget(yb_2, 1, 2)
-        gridB_layout.addWidget(yb_2_input, 1, 3)
+        gridB_layout.addWidget(self.yb_2_input, 1, 3)
         gridB_layout.addWidget(nB, 2, 0)
-        gridB_layout.addWidget(nB_input, 2, 1)
+        gridB_layout.addWidget(self.nB_input, 2, 1)
         gridB_layout.addWidget(btnB, 3, 0, 1, 4)
 
 
-    def entrenamiento_gui(self, entrenaInput_layout):
-        combo_box_entrena = QComboBox()
-        combo_box_entrena.addItems(("Pintar paso a paso", "Inicio y final"))
-        combo_box_entrena.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn_entrenar = QPushButton("Entrenar")
-        btn_entrenar.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+    def btnA_clicked(self):
+        xa1 = int(self.xa_1_input.text())
+        ya1 = int(self.ya_1_input.text())
+        xa2 = int(self.xa_2_input.text())
+        ya2 = int(self.ya_2_input.text())
+        numRegA = int(self.nA_input.text())
+        puntosX = []
+        puntosY = []
+        self.puntos_regA = dict(puntosx = puntosX, puntosy = puntosY)
 
-        entrenaInput_layout.addWidget(combo_box_entrena)
-        entrenaInput_layout.addWidget(btn_entrenar, 2)
+        self.figuraGrafica.clear()
+        graficaA = self.figuraGrafica.add_subplot(111)
+
+
+        for punto in range(numRegA):
+            # puntosA[punto] = [random.uniform(xa1, xa2)]
+            self.puntos_regA["puntosx"].append(random.uniform(xa1,xa2))
+            self.puntos_regA["puntosy"].append(random.uniform(ya1,ya2))
+
+        rectA = plt.Rectangle((min(xa2,xa1), min(ya2,ya1)), abs(xa2-xa1), abs(ya2-ya1), facecolor=(0,0,0,0), edgecolor="red")
+        graficaA.add_artist(rectA)
+
+        graficaA.scatter(self.puntos_regA["puntosx"], self.puntos_regA["puntosy"], color="red")
+        graficaA.scatter(self.puntos_regB["puntosx"], self.puntos_regB["puntosy"], color="blue")
+
+
+        self.grafica.draw()
+
+        
+
+        print(f'Region A:\nxa1: {xa1}\tya1: {ya1}\nxa2: {xa2}\tya2: {ya2}\nNum: {numRegA}')
+        # print(f'\n\n{self.puntos_regA["puntosx"]}\n{self.puntos_regA["puntosy"]}')
+
+    def btnB_clicked(self):
+        xb1 = int(self.xb_1_input.text())
+        yb1 = int(self.yb_1_input.text())
+        xb2 = int(self.xb_2_input.text())
+        yb2 = int(self.yb_2_input.text())
+        numRegB = int(self.nB_input.text())
+        puntosX = []
+        puntosY = []
+        self.puntos_regB = dict(puntosx = puntosX, puntosy = puntosY)
+
+        self.figuraGrafica.clear()
+        graficaB = self.figuraGrafica.add_subplot(111)
+
+
+        for punto in range(numRegB):
+            # puntosA[punto] = [random.uniform(xa1, xa2)]
+            self.puntos_regB["puntosx"].append(random.uniform(xb1,xb2))
+            self.puntos_regB["puntosy"].append(random.uniform(yb1,yb2))
+
+        rectB = plt.Rectangle((min(xb2,xb1), min(yb2,yb1)), abs(xb2-xb1), abs(yb2-yb1), facecolor=(0,0,0,0), edgecolor="blue")
+        graficaB.add_artist(rectB)
+
+        graficaB.scatter(self.puntos_regA["puntosx"], self.puntos_regA["puntosy"], color="red")
+        graficaB.scatter(self.puntos_regB["puntosx"], self.puntos_regB["puntosy"], color="blue")
+
+        self.grafica.draw()
+
+        print(f'Region B:\nxa1: {xb1}\tya1: {yb1}\nxa2: {xb2}\tya2: {yb2}\nNum: {numRegB}')
+
+
+
+    def entrenamiento_gui(self, entrenaInput_layout):
+        self.combo_box_entrena = QComboBox()
+        self.combo_box_entrena.addItems(("Pintar paso a paso", "Inicio y final"))
+        self.combo_box_entrena.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.btn_entrenar = QPushButton("Entrenar")
+        self.btn_entrenar.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+        entrenaInput_layout.addWidget(self.combo_box_entrena)
+        entrenaInput_layout.addWidget(self.btn_entrenar, 2)
+        self.btn_entrenar.clicked.connect(self.btn_entrenar_onClicked)
+
+
+    def btn_entrenar_onClicked(self):
+        if (self.combo_box_entrena.currentIndex() == 0):
+            print(f'\n\nSe eligió opcion 0 de Entrenamiento')
+        elif (self.combo_box_entrena.currentIndex() == 1):
+            print(f'\n\nSe eligió opcion 1 de Entrenamiento')
 
 
     def reconocimiento_gui(self, recoInput_layout):
-        combo_box_reco = QComboBox()
-        combo_box_reco.addItems(("Datos aleatorios", "Datos de archivo"))
-        combo_box_reco.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        btn_reco = QPushButton("Reconocimiento")
-        btn_reco.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_reco = QComboBox()
+        self.combo_box_reco.addItems(("Datos aleatorios", "Datos de archivo"))
+        self.combo_box_reco.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.btn_reco = QPushButton("Reconocimiento")
+        self.btn_reco.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.text_reco = QLineEdit()
 
-        recoInput_layout.addWidget(combo_box_reco)
-        recoInput_layout.addWidget(btn_reco, 2)
+        recoInput_layout.addWidget(self.combo_box_reco)
+        recoInput_layout.addWidget(self.btn_reco, 2)
+        self.btn_reco.clicked.connect(self.btn_reco_onClicked)
+
+    def btn_reco_onClicked(self):
+        if (self.combo_box_reco.currentIndex() == 0):
+            print(f'\n\nSe eligió opcion 0 de Reconocimiento')
+            self.datos_reco_aleatorios()
+        elif (self.combo_box_reco.currentIndex() == 1):
+            print(f'\n\nSe eligió opcion 1 de Reconocimiento')
+
+
+    def datos_reco_aleatorios(self):
+        dlg = VentanaEmergente(self)
+        if dlg.exec():
+            numAle = int(dlg.entrada.text())
+            print(f'Aceptar: {numAle}')
+        else:
+            print(f'Cancel')
+
+
+
 
     
     def parametros_gui(self, camInput_layou):
@@ -230,15 +358,21 @@ class VentanaDos(QWidget):
         accPor_label.setFont(QFont('Cascadia Code', 12))
         acc_layout = QHBoxLayout()
 
-        graphWidget = pg.PlotWidget()
-        hour = [1,2,3,4,5,6,7,8,9,10]
-        temperature = [30,32,34,32,33,31,29,32,35,45]
+        # graphWidget = pg.PlotWidget()
+        # hour = [1,2,3,4,5,6,7,8,9,10]
+        # temperature = [30,32,34,32,33,31,29,32,35,45]
         # plot data: x, y values
-        graphWidget.plot(hour, temperature)
+
+        # graphWidget = MainWindow()
+        self.figuraGrafica.add_subplot()
+        
+        # graphWidget.plot(hour, temperature)
 
         vr_layou.addWidget(labelr)
-        vr_layou.addWidget(graphWidget)
+        # vr_layou.addWidget(graphWidget)
+        vr_layou.addWidget(self.grafica)
         vr_layou.addLayout(acc_layout)
         
+        self.grafica.draw()
         acc_layout.addWidget(acc_label)
         acc_layout.addWidget(accPor_label)

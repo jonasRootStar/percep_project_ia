@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QApplication
 from ventanav_dos import VentanaDos
+# from ventanav_tres import VentanaDos
 import sys
 # from ventanav_uno import VentanaUno
 
