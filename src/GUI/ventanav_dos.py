@@ -1,12 +1,14 @@
 import pyqtgraph as pg
-from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QGridLayout, QSizePolicy, QGroupBox, QComboBox, QDialog, QDialogButtonBox
+from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QGridLayout, QSizePolicy, QGroupBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog
 from PySide6.QtGui import QFont
-from PySide6 import QtCore
-# from rectangulo import MainWindow
+from PySide6 import QtCore, QtTest
+import pandas as pd
+import numpy as np
 import random
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from perceptron_cg import Perceptron
 
 
 class VentanaEmergente(QDialog):
@@ -31,7 +33,6 @@ class VentanaEmergente(QDialog):
 
 
 
-
 class VentanaDos(QWidget):
     def __init__(self):
         super().__init__()
@@ -44,11 +45,17 @@ class VentanaDos(QWidget):
         label.setFont(QFont('Cascadia Code', 20))
         label.setAlignment(QtCore.Qt.AlignmentFlag.AlignHCenter)
         self.figuraGrafica = Figure()
+        self.graficas = self.figuraGrafica.add_subplot(111)
         self.grafica = FigureCanvas(self.figuraGrafica)
-        self.puntos_regA = dict(puntosx = [], puntosy = [])
-        self.puntos_regB = dict(puntosx = [], puntosy = [])
 
-
+        # aux = [puntox, puntoy, label]
+        # self.puntos_regA = dict(aux)
+        
+        self.puntos_regA = dict(puntosx = [], puntosy = [], region=1)
+        self.puntos_regB = dict(puntosx = [], puntosy = [], region=-1)
+        self.datosRegiones = pd.DataFrame(columns=['PuntosX', 'PuntosY', 'Region'])
+        self.rel = 0
+        
 
         # Layoud principal ---------------------------------------------------
         v_layo = QVBoxLayout()
@@ -203,16 +210,26 @@ class VentanaDos(QWidget):
         gridB_layout.addWidget(btnB, 3, 0, 1, 4)
 
 
+    def dibujar_scatter(self, puntos_regA, colorA, puntos_regB, colorB):
+        self.figuraGrafica.clear()
+        self.graficas = self.figuraGrafica.add_subplot(111)
+
+        self.graficas.scatter(puntos_regA["puntosx"], puntos_regA["puntosy"], color=colorA)
+        self.graficas.scatter(puntos_regB["puntosx"], puntos_regB["puntosy"], color=colorB)
+
+
+
+
     def btnA_clicked(self):
-        xa1 = int(self.xa_1_input.text())
-        ya1 = int(self.ya_1_input.text())
-        xa2 = int(self.xa_2_input.text())
-        ya2 = int(self.ya_2_input.text())
+        xa1 = float(self.xa_1_input.text())
+        ya1 = float(self.ya_1_input.text())
+        xa2 = float(self.xa_2_input.text())
+        ya2 = float(self.ya_2_input.text())
         numRegA = int(self.nA_input.text())
         puntosX = []
         puntosY = []
-        self.puntos_regA = dict(puntosx = puntosX, puntosy = puntosY)
-
+        self.puntos_regA = dict(puntosx = puntosX, puntosy = puntosY, region=1)
+        # {1: [5, 2, 1]}
         self.figuraGrafica.clear()
         graficaA = self.figuraGrafica.add_subplot(111)
 
@@ -222,29 +239,32 @@ class VentanaDos(QWidget):
             self.puntos_regA["puntosx"].append(random.uniform(xa1,xa2))
             self.puntos_regA["puntosy"].append(random.uniform(ya1,ya2))
 
+        print(f'Region A:{self.puntos_regA}')
+
         rectA = plt.Rectangle((min(xa2,xa1), min(ya2,ya1)), abs(xa2-xa1), abs(ya2-ya1), facecolor=(0,0,0,0), edgecolor="red")
         graficaA.add_artist(rectA)
 
-        graficaA.scatter(self.puntos_regA["puntosx"], self.puntos_regA["puntosy"], color="red")
-        graficaA.scatter(self.puntos_regB["puntosx"], self.puntos_regB["puntosy"], color="blue")
-
+        # graficaA.scatter(self.puntos_regA["puntosx"], self.puntos_regA["puntosy"], color="red")
+        # graficaA.scatter(self.puntos_regB["puntosx"], self.puntos_regB["puntosy"], color="blue")
+        self.dibujar_scatter(self.puntos_regA, "red", self.puntos_regB, "blue")
 
         self.grafica.draw()
 
-        
+        # dtFrameA = pd.DataFrame.from_dict(self.puntos_regA)
+        # dtFrameA.to_csv(r'datosRegA.csv', index=False, header=True)
 
         print(f'Region A:\nxa1: {xa1}\tya1: {ya1}\nxa2: {xa2}\tya2: {ya2}\nNum: {numRegA}')
-        # print(f'\n\n{self.puntos_regA["puntosx"]}\n{self.puntos_regA["puntosy"]}')
+        # print(f'\n\nPuntos en X(a) : {self.puntos_regA["puntosx"]}\n\nPuntos en Y(a){self.puntos_regA["puntosy"]}')
 
     def btnB_clicked(self):
-        xb1 = int(self.xb_1_input.text())
-        yb1 = int(self.yb_1_input.text())
-        xb2 = int(self.xb_2_input.text())
-        yb2 = int(self.yb_2_input.text())
+        xb1 = float(self.xb_1_input.text())
+        yb1 = float(self.yb_1_input.text())
+        xb2 = float(self.xb_2_input.text())
+        yb2 = float(self.yb_2_input.text())
         numRegB = int(self.nB_input.text())
         puntosX = []
         puntosY = []
-        self.puntos_regB = dict(puntosx = puntosX, puntosy = puntosY)
+        self.puntos_regB = dict(puntosx = puntosX, puntosy = puntosY, region=-1)
 
         self.figuraGrafica.clear()
         graficaB = self.figuraGrafica.add_subplot(111)
@@ -255,15 +275,20 @@ class VentanaDos(QWidget):
             self.puntos_regB["puntosx"].append(random.uniform(xb1,xb2))
             self.puntos_regB["puntosy"].append(random.uniform(yb1,yb2))
 
+        print(f'\nRegion B{self.puntos_regB}')
         rectB = plt.Rectangle((min(xb2,xb1), min(yb2,yb1)), abs(xb2-xb1), abs(yb2-yb1), facecolor=(0,0,0,0), edgecolor="blue")
         graficaB.add_artist(rectB)
 
-        graficaB.scatter(self.puntos_regA["puntosx"], self.puntos_regA["puntosy"], color="red")
-        graficaB.scatter(self.puntos_regB["puntosx"], self.puntos_regB["puntosy"], color="blue")
+        # graficaB.scatter(self.puntos_regA["puntosx"], self.puntos_regA["puntosy"], color="red")
+        # graficaB.scatter(self.puntos_regB["puntosx"], self.puntos_regB["puntosy"], color="blue")
+        self.dibujar_scatter(self.puntos_regA, "red", self.puntos_regB, "blue")
+
 
         self.grafica.draw()
 
         print(f'Region B:\nxa1: {xb1}\tya1: {yb1}\nxa2: {xb2}\tya2: {yb2}\nNum: {numRegB}')
+        # print(f'\n\nPuntos en X(b) : {self.puntos_regB["puntosx"]}\n\nPuntos en Y(b){self.puntos_regB["puntosy"]}')
+
 
 
 
@@ -280,10 +305,85 @@ class VentanaDos(QWidget):
 
 
     def btn_entrenar_onClicked(self):
+        dataA = pd.DataFrame.from_dict(self.puntos_regA)
+        dataB = pd.DataFrame.from_dict(self.puntos_regB)
+        listaFilas = []
+        self.percep = Perceptron()
+        
+        self.xMinima = min(float(self.xa_1_input.text()), float(self.xa_2_input.text()), float(self.xb_1_input.text()), float(self.xb_2_input.text()))
+        self.xMax = max(float(self.xa_1_input.text()), float(self.xa_2_input.text()), float(self.xb_1_input.text()), float(self.xb_2_input.text()))
+        self.yMinima = min(float(self.ya_1_input.text()), float(self.ya_2_input.text()), float(self.yb_1_input.text()), float(self.yb_2_input.text()))
+        self.yMax = max(float(self.ya_1_input.text()), float(self.ya_2_input.text()), float(self.yb_1_input.text()), float(self.yb_2_input.text()))
+
+        # print(f'Region A\n{dataA}')
+        # print(f'Region B\n{dataB}')
+
+        self.datosRegiones = pd.concat([dataA, dataB])
+        self.coord = np.array(self.datosRegiones[["puntosx", "puntosy"]].values.tolist())
+        self.recta = np.zeros(len(self.coord))
+        self.datosRegiones.to_csv(r'datos.csv', index=False, header=True)
+        
+        for i, fila in self.datosRegiones.iterrows():
+            aux = [fila.puntosx, fila.puntosy, fila.region]
+            listaFilas.append(aux)
+            # print(f'{i}:{listaFilas[i]}')
+
+        indices = [i for i in range(len(listaFilas))]
+        dicFinal = dict(zip(indices, listaFilas))
+        
+        self.percep.entrenamiento(dicFinal)
+        listaPrediccion = self.percep.prediccion(dicFinal)
+        print(listaPrediccion)
+        self.rel = self.percep.calcularAccuracy(dicFinal, listaPrediccion)
+        self.rectaLinea = self.percep.lineaRecta
+
+        print(str(self.rel))
+        print(f'{self.percep.n_iterations}')
+        self.dibujar_scatter(self.puntos_regA, "red", self.puntos_regB, "blue")
+
+
         if (self.combo_box_entrena.currentIndex() == 0):
             print(f'\n\nSe eligió opcion 0 de Entrenamiento')
+            for epoca in range(self.percep.n_iterations):
+                for x in range(len(dicFinal)):
+                    self.recta[x] = -self.rectaLinea[epoca][0] * self.datosRegiones.iloc[x][0] - self.rectaLinea[epoca][1]
+
+                if (epoca == self.percep.n_iterations-1):
+                    self.graficas.plot(self.coord[:,0], self.recta, color="yellow", linewidth = "1.0", linestyle = "--")
+                else:
+                    self.graficas.plot(self.coord[:,0], self.recta, color="gray", linewidth = "1.0", linestyle = "--")
+
+
+                self.graficas.set_ylim(self.yMinima, self.yMax)
+                self.graficas.set_xlim(self.xMinima, self.xMax)
+
+                self.grafica.draw()
+                QtTest.QTest.qWait(1000)
+                # print(f'Epoca {epoca}:{self.percep.umbral}')
+                
         elif (self.combo_box_entrena.currentIndex() == 1):
             print(f'\n\nSe eligió opcion 1 de Entrenamiento')
+            for epoca in range(self.percep.n_iterations):
+                for x in range(len(dicFinal)):
+                    self.recta[x] = -self.rectaLinea[epoca][0] * self.datosRegiones.iloc[x][0] - self.rectaLinea[epoca][1]
+
+                if ((epoca == 0)):
+                    self.graficas.plot(self.coord[:,0], self.recta, color="gray", linewidth = "1.0", linestyle = "--")
+                elif (epoca == self.percep.n_iterations-1):
+                    self.graficas.plot(self.coord[:,0], self.recta, color="yellow", linewidth = "1.0", linestyle = "--")
+
+                self.graficas.set_ylim(self.yMinima, self.yMax)
+                self.graficas.set_xlim(self.xMinima, self.xMax)
+
+                self.grafica.draw()
+                # QtTest.QTest.qWait(1000)
+                print(f'Epoca {epoca}:{self.percep.umbral}')
+
+        self.accPor_label.setText(f'{self.rel}%')
+        
+
+
+
 
 
     def reconocimiento_gui(self, recoInput_layout):
@@ -301,9 +401,11 @@ class VentanaDos(QWidget):
     def btn_reco_onClicked(self):
         if (self.combo_box_reco.currentIndex() == 0):
             print(f'\n\nSe eligió opcion 0 de Reconocimiento')
+            # ----------------Para datos aleatorios----------------------
             self.datos_reco_aleatorios()
         elif (self.combo_box_reco.currentIndex() == 1):
             print(f'\n\nSe eligió opcion 1 de Reconocimiento')
+            self.datos_de_archivo()
 
 
     def datos_reco_aleatorios(self):
@@ -311,33 +413,118 @@ class VentanaDos(QWidget):
         if dlg.exec():
             numAle = int(dlg.entrada.text())
             print(f'Aceptar: {numAle}')
+            band = True
         else:
+            band = False
             print(f'Cancel')
 
+        if band:
+            xb2 = float(self.xb_2_input.text())
+            yb2 = float(self.yb_2_input.text())
+
+            xa1 = float(self.xa_1_input.text())
+            ya1 = float(self.ya_1_input.text())
+
+            #punto1 = [xa1, yb2]
+            #punto2 = [xb2, ya1]
+            puntosX = np.random.randint(low=xa1, high=xb2, size=numAle)   #Retorna un arreglo de (n size numeros aleatorios) [2, 3, 4, 5, 8, 1, ...]
+            puntosY = np.random.randint(low=ya1, high=yb2, size=numAle)   #low valor minimo inclusivo ;;;;   high valor maximo exclusivo
+
+            datosAleatorios = dict([])
+            for i in range(len(puntosX)):
+                datosAleatorios[i].append([puntosX[i], puntosY[i], np.random.choice([-1,1])])
+            
+            resultados = self.percep.prediccion(datosAleatorios)
+
+            score = self.percep.calcularAccuracy(datosAleatorios, resultados)
+            self.accPor_label.setText(f'{score}%')
+
+    def datos_de_archivo(self):
+        listaArchivo = []
+        archivo_explore = QFileDialog()
+        archivo_explore.setFileMode(QFileDialog.ExistingFile)
+        if archivo_explore.exec():
+            archivo_seleccionado = archivo_explore.selectedFiles()[0]
+            self.archivoDataF = pd.read_csv(archivo_seleccionado)
+            # self.archivoDict = self.archivoDataF.to_dict()
+            # print(f'{self.archivoDict}')
+
+            for i, fila in self.archivoDataF.iterrows():
+                aux_archivo = [fila.puntosx, fila.puntosy, fila.region]
+                listaArchivo.append(aux_archivo)
+
+            # print(f'{listaArchivo}')
+            datosA = self.archivoDataF[self.archivoDataF['region'] == 1]
+            datosB = self.archivoDataF[self.archivoDataF['region'] == -1]
+            datosADicc = datosA.to_dict('list')
+            datosBDicc = datosB.to_dict('list')
+
+            self.dibujar_scatter(datosADicc, "red", datosBDicc, "blue")
+            self.grafica.draw()
+            
+            indices = [i for i in range(len(listaArchivo))]
+            diccArchivo = dict(zip(indices, listaArchivo))
+
+            # ----------------------------------------
+            coord = np.array(self.archivoDataF[["puntosx", "puntosy"]].values.tolist())
+
+            rectaArchivo = np.zeros(len(coord))
+
+
+            resultado = self.percep.prediccion(diccArchivo)
+            score = self.percep.calcularAccuracy(diccArchivo, resultado)
+
+            xMinima = min(self.archivoDataF["puntosx"])
+            yMinima = min(self.archivoDataF["puntosy"])
+            xMax = max(self.archivoDataF["puntosx"])
+            yMax = max(self.archivoDataF["puntosy"])
 
 
 
+            for epoca in range(self.percep.n_iterations):
+                for x in range(len(diccArchivo)):
+                    rectaArchivo[x] = -self.rectaLinea[epoca][0] * self.archivoDataF.iloc[x][0] - self.rectaLinea[epoca][1]
+
+                if ((epoca == 0)):
+                    self.graficas.plot(coord[:,0], rectaArchivo, color="gray", linewidth = "1.0", linestyle = "--")
+                elif (epoca == self.percep.n_iterations-1):
+                    self.graficas.plot(coord[:,0], rectaArchivo, color="yellow", linewidth = "1.0", linestyle = "--")
+
+                self.graficas.set_ylim(yMinima, yMax)
+                self.graficas.set_xlim(xMinima, xMax)
+
+                self.grafica.draw()
+
+            self.accPor_label.setText(f'{score}%')
+
+
+            
     
     def parametros_gui(self, camInput_layou):
         gridcam_layou = QGridLayout()
         param_group = QGroupBox("Parametros")
         param_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         inter_label = QLabel("Intervalos Peso del neurón")
-        inter1_input = QLineEdit()
-        inter2_input = QLineEdit()
+        self.inter1_input = QLineEdit()
+        self.inter2_input = QLineEdit()
         coef_label = QLabel("Coeficiente de aprendizaje")
-        coef_input = QLineEdit()
+        self.coef_input = QLineEdit()
         btn_cambio = QPushButton("Aplicar")
+        btn_cambio.clicked.connect(self.btn_cambio_onClicked)
 
         gridcam_layou.addWidget(inter_label, 0, 0)
-        gridcam_layou.addWidget(inter1_input, 0, 1)
-        gridcam_layou.addWidget(inter2_input, 0, 2)
+        gridcam_layou.addWidget(self.inter1_input, 0, 1)
+        gridcam_layou.addWidget(self.inter2_input, 0, 2)
         gridcam_layou.addWidget(coef_label, 1, 0)
-        gridcam_layou.addWidget(coef_input, 1, 1)
+        gridcam_layou.addWidget(self.coef_input, 1, 1)
         gridcam_layou.addWidget(btn_cambio, 2, 0, 1, 2)
 
         camInput_layou.addWidget(param_group)
         param_group.setLayout(gridcam_layou)
+
+
+    def btn_cambio_onClicked(self):
+        pass
 
 
 
@@ -354,8 +541,8 @@ class VentanaDos(QWidget):
 
         acc_label = QLabel("Porcentaje de ACC: ")
         acc_label.setFont(QFont('Cascadia Code', 12))
-        accPor_label = QLabel("_____ %")
-        accPor_label.setFont(QFont('Cascadia Code', 12))
+        self.accPor_label = QLabel("_____ %")
+        self.accPor_label.setFont(QFont('Cascadia Code', 12))
         acc_layout = QHBoxLayout()
 
         # graphWidget = pg.PlotWidget()
@@ -375,4 +562,4 @@ class VentanaDos(QWidget):
         
         self.grafica.draw()
         acc_layout.addWidget(acc_label)
-        acc_layout.addWidget(accPor_label)
+        acc_layout.addWidget(self.accPor_label)
