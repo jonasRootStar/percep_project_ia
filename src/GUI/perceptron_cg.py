@@ -12,10 +12,8 @@ class Perceptron:
         print(f'{self.W}')
         print(self.W[2])
 
-    # def set_pesos(self, tam):
-    #     for i in range(tam):
-    #         self.W = np.random.rand(2,1)
-
+    def set_coeficiente(self, new_learning):
+        self.learning_rate = new_learning
 
     def entrenamiento(self, X):
         # {llave 1: [5, 2, 1]}  

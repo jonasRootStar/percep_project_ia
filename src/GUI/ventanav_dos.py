@@ -1,5 +1,5 @@
 import pyqtgraph as pg
-from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QGridLayout, QSizePolicy, QGroupBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog
+from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QGridLayout, QSizePolicy, QGroupBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QMessageBox
 from PySide6.QtGui import QFont
 from PySide6 import QtCore, QtTest
 import pandas as pd
@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from perceptron_cg import Perceptron
+from archivo import Archivo
 
 
 class VentanaEmergente(QDialog):
@@ -289,8 +290,11 @@ class VentanaDos(QWidget):
         print(f'Region B:\nxa1: {xb1}\tya1: {yb1}\nxa2: {xb2}\tya2: {yb2}\nNum: {numRegB}')
         # print(f'\n\nPuntos en X(b) : {self.puntos_regB["puntosx"]}\n\nPuntos en Y(b){self.puntos_regB["puntosy"]}')
 
-
-
+    def valores_entrada(self):
+        self.xMinima = min(float(self.xa_1_input.text()), float(self.xa_2_input.text()), float(self.xb_1_input.text()), float(self.xb_2_input.text()))
+        self.xMax = max(float(self.xa_1_input.text()), float(self.xa_2_input.text()), float(self.xb_1_input.text()), float(self.xb_2_input.text()))
+        self.yMinima = min(float(self.ya_1_input.text()), float(self.ya_2_input.text()), float(self.yb_1_input.text()), float(self.yb_2_input.text()))
+        self.yMax = max(float(self.ya_1_input.text()), float(self.ya_2_input.text()), float(self.yb_1_input.text()), float(self.yb_2_input.text()))
 
     def entrenamiento_gui(self, entrenaInput_layout):
         self.combo_box_entrena = QComboBox()
@@ -309,14 +313,8 @@ class VentanaDos(QWidget):
         dataB = pd.DataFrame.from_dict(self.puntos_regB)
         listaFilas = []
         self.percep = Perceptron()
-        
-        self.xMinima = min(float(self.xa_1_input.text()), float(self.xa_2_input.text()), float(self.xb_1_input.text()), float(self.xb_2_input.text()))
-        self.xMax = max(float(self.xa_1_input.text()), float(self.xa_2_input.text()), float(self.xb_1_input.text()), float(self.xb_2_input.text()))
-        self.yMinima = min(float(self.ya_1_input.text()), float(self.ya_2_input.text()), float(self.yb_1_input.text()), float(self.yb_2_input.text()))
-        self.yMax = max(float(self.ya_1_input.text()), float(self.ya_2_input.text()), float(self.yb_1_input.text()), float(self.yb_2_input.text()))
 
-        # print(f'Region A\n{dataA}')
-        # print(f'Region B\n{dataB}')
+        self.valores_entrada()
 
         self.datosRegiones = pd.concat([dataA, dataB])
         self.coord = np.array(self.datosRegiones[["puntosx", "puntosy"]].values.tolist())
@@ -326,10 +324,12 @@ class VentanaDos(QWidget):
         for i, fila in self.datosRegiones.iterrows():
             aux = [fila.puntosx, fila.puntosy, fila.region]
             listaFilas.append(aux)
-            # print(f'{i}:{listaFilas[i]}')
 
         indices = [i for i in range(len(listaFilas))]
         dicFinal = dict(zip(indices, listaFilas))
+
+        for indice in range(len(dicFinal)):
+            print(f'{indice}\t{dicFinal[indice]}')
         
         self.percep.entrenamiento(dicFinal)
         listaPrediccion = self.percep.prediccion(dicFinal)
@@ -384,8 +384,6 @@ class VentanaDos(QWidget):
 
 
 
-
-
     def reconocimiento_gui(self, recoInput_layout):
         self.combo_box_reco = QComboBox()
         self.combo_box_reco.addItems(("Datos aleatorios", "Datos de archivo"))
@@ -398,6 +396,7 @@ class VentanaDos(QWidget):
         recoInput_layout.addWidget(self.btn_reco, 2)
         self.btn_reco.clicked.connect(self.btn_reco_onClicked)
 
+
     def btn_reco_onClicked(self):
         if (self.combo_box_reco.currentIndex() == 0):
             print(f'\n\nSe eligió opcion 0 de Reconocimiento')
@@ -408,6 +407,9 @@ class VentanaDos(QWidget):
             self.datos_de_archivo()
 
 
+    # *************************REVISAR*****************************
+    # Revisar la generación de valores aleatorios, además de gráficar la
+    # linea recta con base a los nuevos datos.
     def datos_reco_aleatorios(self):
         dlg = VentanaEmergente(self)
         if dlg.exec():
@@ -439,21 +441,24 @@ class VentanaDos(QWidget):
             score = self.percep.calcularAccuracy(datosAleatorios, resultados)
             self.accPor_label.setText(f'{score}%')
 
+
+
     def datos_de_archivo(self):
+        self.valores_entrada()
+        archivo = Archivo(self.xMinima, self.xMax, self.yMinima, self.yMax)
+        archivo.crear_archivo()
         listaArchivo = []
         archivo_explore = QFileDialog()
         archivo_explore.setFileMode(QFileDialog.ExistingFile)
         if archivo_explore.exec():
             archivo_seleccionado = archivo_explore.selectedFiles()[0]
             self.archivoDataF = pd.read_csv(archivo_seleccionado)
-            # self.archivoDict = self.archivoDataF.to_dict()
-            # print(f'{self.archivoDict}')
 
             for i, fila in self.archivoDataF.iterrows():
                 aux_archivo = [fila.puntosx, fila.puntosy, fila.region]
                 listaArchivo.append(aux_archivo)
 
-            # print(f'{listaArchivo}')
+            
             datosA = self.archivoDataF[self.archivoDataF['region'] == 1]
             datosB = self.archivoDataF[self.archivoDataF['region'] == -1]
             datosADicc = datosA.to_dict('list')
@@ -479,8 +484,9 @@ class VentanaDos(QWidget):
             xMax = max(self.archivoDataF["puntosx"])
             yMax = max(self.archivoDataF["puntosy"])
 
-
-
+            # *************************REVISAR*****************************
+            # Revisar si la gráfica la dibuja adecuadamente respecto al entrenamiento y con los
+            # nuevos datos extraidos del archivo
             for epoca in range(self.percep.n_iterations):
                 for x in range(len(diccArchivo)):
                     rectaArchivo[x] = -self.rectaLinea[epoca][0] * self.archivoDataF.iloc[x][0] - self.rectaLinea[epoca][1]
@@ -524,7 +530,25 @@ class VentanaDos(QWidget):
 
 
     def btn_cambio_onClicked(self):
-        pass
+        try:
+            inicio_intervalo = float(self.inter1_input.text())
+            fin_intervalo = float(self.inter2_input.text())
+            coef_aprendizaje = float(self.coef_input.text())
+
+
+            if (inicio_intervalo >= 0 and fin_intervalo > inicio_intervalo and coef_aprendizaje > 0 and coef_aprendizaje < 1):
+
+                QMessageBox.information(self, "Confirmación", "Todos los parámetros modificados")
+            elif(coef_aprendizaje > 0 and coef_aprendizaje < 1):
+
+                QMessageBox.information(self, "Confirmación", "Learning rate modificado")
+            elif(inicio_intervalo >= 0 and fin_intervalo > inicio_intervalo):
+
+                QMessageBox.information(self, "Confirmación", "Intervalo modificado")
+            else:
+                QMessageBox.critical(self, "Error", "Parámetros fuera de los rangos válidos, corrija los parámetros e intente de nuevo.")
+        except:
+            QMessageBox.critical(self, "Error", "Espacios vacíos, favor de ingresar datos")
 
 
 
