@@ -537,13 +537,14 @@ class VentanaDos(QWidget):
 
 
             if (inicio_intervalo >= 0 and fin_intervalo > inicio_intervalo and coef_aprendizaje > 0 and coef_aprendizaje < 1):
-
+                self.percep.setLearningRate(coef_aprendizaje)
+                self.percep.setWeightRange(inicio_intervalo, fin_intervalo)
                 QMessageBox.information(self, "Confirmación", "Todos los parámetros modificados")
             elif(coef_aprendizaje > 0 and coef_aprendizaje < 1):
-
+                self.percep.setLearningRate(coef_aprendizaje)
                 QMessageBox.information(self, "Confirmación", "Learning rate modificado")
             elif(inicio_intervalo >= 0 and fin_intervalo > inicio_intervalo):
-
+                self.percep.setWeightRange(inicio_intervalo, fin_intervalo)
                 QMessageBox.information(self, "Confirmación", "Intervalo modificado")
             else:
                 QMessageBox.critical(self, "Error", "Parámetros fuera de los rangos válidos, corrija los parámetros e intente de nuevo.")

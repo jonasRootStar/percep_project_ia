@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 class Perceptron:
     def __init__(self, learning_rate=0.01, n_iterations=15):
@@ -69,6 +70,13 @@ class Perceptron:
     def ecuacionPendiente(self):                            #Funcion que retornara una lista o arreglo donde contendra
         return self.lineaRecta                              #la pendiente m y el termino independiente b para poder graficar
     
+    def setLearningRate(self, n):
+        self.learning_rate = n
+
+    def setWeightRange(self, x, y):
+        self.W[0] = random.uniform(x, y)
+        self.W[1] = random.uniform(x, y)
+
 
 prueba = {
     "1": [1,5,1],
